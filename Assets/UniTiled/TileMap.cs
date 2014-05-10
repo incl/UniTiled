@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 using UniTiled.Data;
+using UniTiled.Util;
 
 namespace UniTiled
 {
@@ -17,6 +18,7 @@ namespace UniTiled
         void Start()
         {
             LoadTMX(Resources.Load<TextAsset>("TestMap"));
+            CreateMesh();
         }
 
         public void LoadTMX(TextAsset tmx)
@@ -25,20 +27,10 @@ namespace UniTiled
             layers = new List<Layer>();
             objectGroups = new List<ObjectGroup>();
 
-            CreateMesh(tmx);
-        }
-
-        public Mesh CreateMesh(TextAsset tmx)
-        {
-            Mesh mesh = new Mesh();
-            int usedVertices = 0;
-            List<Vector3> vertices = new List<Vector3>();
-            List<Vector2> uv = new List<Vector2>();
-            List<int> triangles = new List<int>();
-
             XmlDocument doc = new XmlDocument();
             doc.Load(new StringReader(tmx.text)); 
 
+            int layerIdx = 0;
             XmlNodeList nodeList = doc.DocumentElement.ChildNodes;
             foreach (XmlNode node in nodeList)
             {
@@ -48,60 +40,88 @@ namespace UniTiled
                         CreateTileset(node);
                         break;
                     case "layer":
-                        CreateLayer(node);
+                        CreateLayer(node, layerIdx);
                         break;
                     case "objectgroup":
                         CreateObjectGroup(node);
                         break;
                 }
             }
-            
-            mesh.vertices = vertices.ToArray ();
-            mesh.uv = uv.ToArray ();
-            mesh.triangles = triangles.ToArray ();
-            return mesh;
         }
 
-        public string GetStringAttr(XmlNode node, string name, string defaultValue)
+        public void CreateMesh()
         {
-            if (node.Attributes[name] == null)
-                return defaultValue;
+            Mesh mesh = new Mesh();
+            List<Vector3> vertices = new List<Vector3>();
+            List<Vector2> uv = new List<Vector2>();
+            List<int> triangles = new List<int>();
 
-            return node.Attributes[name].InnerText;
-        }
-        
-        public int GetIntAttr(XmlNode node, string name, int defaultValue)
-        {
-            if (node.Attributes[name] == null)
-                return defaultValue;
+            foreach (Layer layer in layers)
+            {
+                int verticesCount = vertices.Count;
+                vertices.AddRange(layer.CreateVertices());
+                uv.AddRange(layer.CreateUV());
+                triangles.AddRange(layer.CreateTriangles(verticesCount, vertices.Count));
+            }
+
+            mesh.vertices = vertices.ToArray();
+            mesh.uv = uv.ToArray();
+            mesh.triangles = triangles.ToArray();
+
+            MeshFilter filter = GetComponent<MeshFilter>();
+            filter.mesh = mesh;
             
-            return int.Parse(node.Attributes[name].InnerText);
+            MeshRenderer renderer = GetComponent<MeshRenderer>();
+            Material[] materials = {
+                Resources.Load<Material>("TestMat")
+            };
+            renderer.materials = materials;
+        }
+
+        public Tileset FindTilesetByGID(string GID)
+        {
+            return tilesets[0];
         }
 
         public void CreateTileset(XmlNode node)
         {
             Tileset tileset = new Tileset();
             
-            XmlNode imageNode = node.SelectSingleNode("image");
-            tileset.imageSource = GetStringAttr(imageNode, "source", "");
-            tileset.imageWidth = GetIntAttr(imageNode, "width", 0);
-            tileset.imageHeight = GetIntAttr(imageNode, "height", 0);
+            tileset.firstGID = XmlHelper.GetAttribute<int>(node, "firstgid", 0);
+            tileset.tileWidth = XmlHelper.GetAttribute<int>(node, "tilewidth", 0);
+            tileset.tileHeight = XmlHelper.GetAttribute<int>(node, "tileheight", 0);
+            tileset.spacing = XmlHelper.GetAttribute<int>(node, "spacing", 0);
+            tileset.margin = XmlHelper.GetAttribute<int>(node, "margin", 0);
             
-            tileset.firstGID = GetIntAttr(node, "firstgid", 0);
-            tileset.tileWidth = GetIntAttr(node, "tilewidth", 0);
-            tileset.tileHeight = GetIntAttr(node, "tileheight", 0);
-            tileset.spacing = GetIntAttr(node, "spacing", 0);
-            tileset.margin = GetIntAttr(node, "margin", 0);
+            XmlNode imageNode = node.SelectSingleNode("image");
+            tileset.imageSource = XmlHelper.GetAttribute<string>(imageNode, "source", "");
+            tileset.imageWidth = XmlHelper.GetAttribute<int>(imageNode, "width", 0);
+            tileset.imageHeight = XmlHelper.GetAttribute<int>(imageNode, "height", 0);
 
             tilesets.Add(tileset);
         }
 
-        public void CreateLayer(XmlNode node)
+        public void CreateLayer(XmlNode node, int layerIdx)
         {
+            Layer layer = new Layer();
+
+            layer.tileMap = this;
+            layer.index = layerIdx;
+            layer.name = XmlHelper.GetAttribute<string>(node, "name", "");
+            layer.width = XmlHelper.GetAttribute<int>(node, "width", 0);
+            layer.height = XmlHelper.GetAttribute<int>(node, "height", 0);
+
+            XmlNode dataNode = node.SelectSingleNode("data");
+            layer.data = dataNode.InnerText.Split(',');
+
+            layers.Add(layer);
         }
 
         public void CreateObjectGroup(XmlNode node)
         {
+            ObjectGroup objectGroup = new ObjectGroup();
+
+            objectGroups.Add(objectGroup);
         }
     }
 }
