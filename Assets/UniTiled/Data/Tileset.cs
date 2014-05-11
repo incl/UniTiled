@@ -6,13 +6,13 @@ namespace UniTiled.Data
     public class Tileset
     {
         public string imageSource;
-        public int imageWidth;
-        public int imageHeight;
+        public float imageWidth;
+        public float imageHeight;
         public int firstGID;
-        public int tileWidth;
-        public int tileHeight;
-        public int spacing;
-        public int margin;
+        public float tileWidth;
+        public float tileHeight;
+        public float spacing;
+        public float margin;
 
         public string ToString()
         {

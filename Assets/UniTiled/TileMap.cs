@@ -11,13 +11,17 @@ namespace UniTiled
     [RequireComponent(typeof(MeshRenderer))]
     public class TileMap : MonoBehaviour
     {
+        public int pixelsToUnits;
+        public TextAsset tmx;
+
         private List<Tileset> tilesets;
         private List<Layer> layers;
         private List<ObjectGroup> objectGroups;
 
         void Start()
         {
-            LoadTMX(Resources.Load<TextAsset>("TestMap"));
+            LoadTMX(tmx);
+            LoadMaterials();
             CreateMesh();
         }
 
@@ -49,9 +53,25 @@ namespace UniTiled
             }
         }
 
+        public void LoadMaterials()
+        {
+            List<Material> materials = new List<Material>();
+
+            foreach (Tileset tileset in tilesets)
+            {
+                string name = tileset.imageSource.Substring(0, tileset.imageSource.IndexOf("."));
+                materials.Add(Resources.Load<Material>(name));
+            }
+
+            materials.Reverse();
+            MeshRenderer renderer = GetComponent<MeshRenderer>();
+            renderer.materials = materials.ToArray();
+        }
+
         public void CreateMesh()
         {
             Mesh mesh = new Mesh();
+            mesh.name = "TileMap";
             List<Vector3> vertices = new List<Vector3>();
             List<Vector2> uv = new List<Vector2>();
             List<int> triangles = new List<int>();
@@ -70,12 +90,6 @@ namespace UniTiled
 
             MeshFilter filter = GetComponent<MeshFilter>();
             filter.mesh = mesh;
-            
-            MeshRenderer renderer = GetComponent<MeshRenderer>();
-            Material[] materials = {
-                Resources.Load<Material>("TestMat")
-            };
-            renderer.materials = materials;
         }
 
         public Tileset FindTilesetByGID(string GID)
@@ -88,15 +102,15 @@ namespace UniTiled
             Tileset tileset = new Tileset();
             
             tileset.firstGID = XmlHelper.GetAttribute<int>(node, "firstgid", 0);
-            tileset.tileWidth = XmlHelper.GetAttribute<int>(node, "tilewidth", 0);
-            tileset.tileHeight = XmlHelper.GetAttribute<int>(node, "tileheight", 0);
-            tileset.spacing = XmlHelper.GetAttribute<int>(node, "spacing", 0);
-            tileset.margin = XmlHelper.GetAttribute<int>(node, "margin", 0);
+            tileset.tileWidth = XmlHelper.GetAttribute<float>(node, "tilewidth", 0f);
+            tileset.tileHeight = XmlHelper.GetAttribute<float>(node, "tileheight", 0f);
+            tileset.spacing = XmlHelper.GetAttribute<float>(node, "spacing", 0f);
+            tileset.margin = XmlHelper.GetAttribute<float>(node, "margin", 0f);
             
             XmlNode imageNode = node.SelectSingleNode("image");
             tileset.imageSource = XmlHelper.GetAttribute<string>(imageNode, "source", "");
-            tileset.imageWidth = XmlHelper.GetAttribute<int>(imageNode, "width", 0);
-            tileset.imageHeight = XmlHelper.GetAttribute<int>(imageNode, "height", 0);
+            tileset.imageWidth = XmlHelper.GetAttribute<float>(imageNode, "width", 0f);
+            tileset.imageHeight = XmlHelper.GetAttribute<float>(imageNode, "height", 0f);
 
             tilesets.Add(tileset);
         }

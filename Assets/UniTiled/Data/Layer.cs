@@ -31,8 +31,9 @@ namespace UniTiled.Data
                     }
 
                     Tileset tileset = tileMap.FindTilesetByGID(GID);
-                    int w = tileset.tileWidth;
-                    int h = tileset.tileHeight;
+                    float w = tileset.tileWidth / (float)tileMap.pixelsToUnits;
+                    float h = tileset.tileHeight / (float)tileMap.pixelsToUnits;
+
 
                     vertices.Add(new Vector3(w * x, h * -y, z));
                     vertices.Add(new Vector3(w * x, h * (-y + 1), z));
@@ -51,8 +52,8 @@ namespace UniTiled.Data
             var uv = new List<Vector2>();
 
             Tileset tileset = tileMap.FindTilesetByGID("0");
-            int cols = tileset.imageWidth / (tileset.tileWidth + tileset.spacing);
-            int rows = tileset.imageHeight / (tileset.tileHeight + tileset.spacing);      
+            int cols = (int)(tileset.imageWidth / (tileset.tileWidth + tileset.spacing));
+            int rows = (int)(tileset.imageHeight / (tileset.tileHeight + tileset.spacing));
             float cellWidth = ((float)tileset.tileWidth / tileset.imageWidth);
             float cellHeight = ((float)tileset.tileHeight / tileset.imageHeight);      
             float spacingWidth = ((float)tileset.spacing / tileset.imageWidth);
