@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-namespace UniTiled.Data
+namespace UniTiled
 {
     public class ObjectGroup
     {
